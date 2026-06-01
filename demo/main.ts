@@ -143,8 +143,8 @@ export function init(seed = 42): void {
     { type: 'uniform', min: 0.5, max: MAX_DELAY_MS }, 'AMPA', rng);
 
   storeEI = buildCSRStore(N_E, N_I,
-    { type: 'random', probability: 0.25 },
-    { type: 'lognormal', mu: Math.log(1.5), sigma: 0.3 },
+    { type: 'random', probability: 0.12 },
+    { type: 'lognormal', mu: Math.log(0.8), sigma: 0.3 },
     { type: 'uniform', min: 0.5, max: MAX_DELAY_MS }, 'AMPA', rng);
 
   storeIE = buildCSRStore(N_I, N_E,
@@ -179,9 +179,11 @@ export function step(driveMode: 'tonic' | 'burst' | 'off'): void {
   deliverSpikes(dlII.dequeue(), inhPop, storeII, 'GABA_A', ADEX_STATE_SIZE);
 
   // 2. External drive to E neurons only
+  // Burst: 25ms ON / 175ms OFF — long enough to see at 10× speed
   const Iext = driveMode === 'tonic'  ? 250
-             : driveMode === 'burst'  ? ((simT % 100) < 5 ? 700 : 0)
+             : driveMode === 'burst'  ? ((simT % 200) < 25 ? 700 : 0)
              : 0;
+  currentIext = Iext;
   currentsE.fill(Iext);
   currentsI.fill(0);
 
@@ -272,3 +274,6 @@ export function popRateHz(windowMs = 200): number {
 
 export const N_TOTAL = N_E + N_I;
 export const N_EXC   = N_E;
+
+/** Current drive level in pA — used by renderer to show a drive indicator */
+export let currentIext = 0;

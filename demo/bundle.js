@@ -24,6 +24,7 @@ var SNN = (() => {
     N_EXC: () => N_EXC,
     N_TOTAL: () => N_TOTAL,
     bus: () => bus,
+    currentIext: () => currentIext,
     init: () => init,
     meanEEWeight: () => meanEEWeight,
     popRateHz: () => popRateHz,
@@ -884,8 +885,8 @@ var SNN = (() => {
     storeEI = buildCSRStore(
       N_E,
       N_I,
-      { type: "random", probability: 0.25 },
-      { type: "lognormal", mu: Math.log(1.5), sigma: 0.3 },
+      { type: "random", probability: 0.12 },
+      { type: "lognormal", mu: Math.log(0.8), sigma: 0.3 },
       { type: "uniform", min: 0.5, max: MAX_DELAY_MS },
       "AMPA",
       rng
@@ -922,7 +923,8 @@ var SNN = (() => {
     deliverSpikes(dlEI.dequeue(), inhPop, storeEI, "AMPA", ADEX_STATE_SIZE);
     deliverSpikes(dlIE.dequeue(), excPop, storeIE, "GABA_A", ADEX_STATE_SIZE);
     deliverSpikes(dlII.dequeue(), inhPop, storeII, "GABA_A", ADEX_STATE_SIZE);
-    const Iext = driveMode === "tonic" ? 250 : driveMode === "burst" ? simT % 100 < 5 ? 700 : 0 : 0;
+    const Iext = driveMode === "tonic" ? 250 : driveMode === "burst" ? simT % 200 < 25 ? 700 : 0 : 0;
+    currentIext = Iext;
     currentsE.fill(Iext);
     currentsI.fill(0);
     const { spikeIndices: spkE } = stepPopulation(excPop, adex, currentsE, DT, simT);
@@ -1006,5 +1008,6 @@ var SNN = (() => {
   }
   var N_TOTAL = N_E + N_I;
   var N_EXC = N_E;
+  var currentIext = 0;
   return __toCommonJS(main_exports);
 })();

@@ -11,28 +11,39 @@
       overflow: hidden; }
     body { display: flex; flex-direction: column; }
 
+    /* ── Header ── */
     #hd {
-      flex-shrink: 0; display: flex; align-items: center; gap: 10px;
-      padding: 5px 12px; background: #161b22; border-bottom: 1px solid #21262d; min-height: 36px;
+      flex-shrink: 0; padding: 6px 12px; background: #161b22;
+      border-bottom: 1px solid #21262d;
     }
+    .hd-row1 { display: flex; align-items: center; gap: 10px; }
+    .hd-row2 { font-size: 10px; color: #484f58; margin-top: 2px; }
     #hd h1 { font-size: 12px; font-weight: 700; color: #58a6ff; white-space: nowrap; }
     #stats { display: flex; flex-wrap: wrap; gap: 8px; font-size: 11px; color: #8b949e; flex: 1; }
     .sv { color: #e6edf3; font-weight: 600; }
-    #legend { font-size: 10px; display: flex; gap: 6px; white-space: nowrap; }
-    .le { color: #58a6ff; } .li { color: #f0883e; }
+    #drive-ind {
+      font-size: 10px; padding: 2px 6px; border-radius: 3px;
+      background: #21262d; border: 1px solid #30363d; white-space: nowrap;
+    }
+    #drive-ind.active { background: #1a3a1a; border-color: #3fb950; color: #3fb950; }
+    #drive-ind.burst  { background: #3a1a00; border-color: #f0883e; color: #f0883e; }
 
+    /* ── Canvas area ── */
     #cvs-wrap { flex: 1; display: flex; flex-direction: column; gap: 4px; padding: 5px 5px 3px; min-height: 0; }
     .cw { position: relative; min-height: 0; }
     canvas { position: absolute; inset: 0; width: 100%; height: 100%;
       background: #010409; border: 1px solid #21262d; border-radius: 4px; display: block; }
 
+    /* ── Footer ── */
     #ft {
       flex-shrink: 0; display: flex; align-items: center; flex-wrap: wrap;
-      gap: 5px; padding: 5px 10px; background: #161b22; border-top: 1px solid #21262d; min-height: 38px;
+      gap: 5px; padding: 5px 10px; background: #161b22;
+      border-top: 1px solid #21262d; min-height: 38px;
     }
     button { padding: 5px 14px; border-radius: 5px; border: 1px solid #30363d;
       background: #21262d; color: #e6edf3; font-size: 12px; font-family: inherit;
-      cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation; min-height: 28px; }
+      cursor: pointer; -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation; min-height: 28px; }
     button:active { background: #30363d; }
     #playBtn { background: #1f6feb; border-color: #388bfd; min-width: 76px; }
     #playBtn:active { background: #388bfd; }
@@ -45,13 +56,21 @@
 <body>
 
 <div id="hd">
-  <h1>SNN · AdEx</h1>
-  <div id="stats">
-    <div>t=<span class="sv" id="simT">0</span>ms</div>
-    <div>Hz=<span class="sv" id="popHz">–</span></div>
-    <div>⟨w<sub>EE</sub>⟩=<span class="sv" id="meanW">–</span></div>
+  <div class="hd-row1">
+    <h1>SNN · AdEx</h1>
+    <div id="stats">
+      <div>t=<span class="sv" id="simT">0</span>ms</div>
+      <div>E=<span class="sv" id="eHz">–</span>Hz</div>
+      <div>I=<span class="sv" id="iHz">–</span>Hz</div>
+      <div>⟨w<sub>EE</sub>⟩=<span class="sv" id="meanW">–</span></div>
+    </div>
+    <div id="drive-ind">drive: off</div>
   </div>
-  <div id="legend"><span class="le">■ E×80</span><span class="li">■ I×20</span></div>
+  <div class="hd-row2">
+    Top panel: each dot = one neuron firing (spike).
+    Blue = excitatory (E, 80 neurons) · Orange = inhibitory (I, 20 neurons).
+    Bottom panel: current firing rate per neuron over last 200ms.
+  </div>
 </div>
 
 <div id="cvs-wrap">
@@ -72,38 +91,33 @@
   </select>
   <label>Drive</label>
   <select id="drive">
-    <option value="tonic" selected>Tonic</option>
-    <option value="burst">Burst</option>
+    <option value="tonic" selected>Tonic 250pA</option>
+    <option value="burst">Burst 700pA</option>
     <option value="off">Silent</option>
   </select>
 </div>
 
-<!-- Compiled bundle from actual TypeScript packages:
-     @snn/neurons, @snn/network, @snn/plasticity, @snn/observability, @snn/config, @snn/types -->
 <script src="bundle.js"></script>
 <script>
 'use strict';
 
-// SNN is the IIFE global exported by bundle.js (built from demo/main.ts)
-// It wraps the actual platform packages: AdExModel, buildCSRStore, STDPRule, etc.
-const { init, step, meanEEWeight, popRateHz, raster, N_EXC, N_TOTAL } = SNN;
+const { init, step, meanEEWeight, raster, N_EXC, N_TOTAL } = SNN;
 
 // ── Canvas setup ──────────────────────────────────────────────────────────────
 const rasterCanvas = document.getElementById('raster');
 const ratesCanvas  = document.getElementById('rates');
 const rcx = rasterCanvas.getContext('2d');
-const rtx  = ratesCanvas.getContext('2d');
-const DPR  = Math.min(window.devicePixelRatio || 1, 2);
-const RASTER_WIN = 400; // ms
+const rtx = ratesCanvas.getContext('2d');
+const DPR = Math.min(window.devicePixelRatio || 1, 2);
+const RASTER_WIN = 400; // ms shown
 
 function fitCanvas(c) {
   const r = c.parentElement.getBoundingClientRect();
-  const nw = Math.floor(r.width  * DPR);
-  const nh = Math.floor(r.height * DPR);
+  const nw = Math.floor(r.width * DPR), nh = Math.floor(r.height * DPR);
   if (c.width !== nw || c.height !== nh) { c.width = nw; c.height = nh; }
 }
 
-// ── Rendering ─────────────────────────────────────────────────────────────────
+// ── Spike raster ──────────────────────────────────────────────────────────────
 function drawRaster() {
   fitCanvas(rasterCanvas);
   const ctx = rcx, W = rasterCanvas.width, H = rasterCanvas.height;
@@ -111,23 +125,33 @@ function drawRaster() {
 
   const tNow = SNN.simT;
   const tMin = tNow - RASTER_WIN;
-  const xScale = W / RASTER_WIN, yScale = H / N_TOTAL;
-  const dotH = Math.max(1.5, yScale * 0.8);
+  const xScale = W / RASTER_WIN;
+  const yScale = H / N_TOTAL;
+  const dotH   = Math.max(1.5, yScale * 0.8);
 
-  // 100ms grid
-  ctx.strokeStyle = '#1c2128'; ctx.lineWidth = 1;
-  for (let ms = 0; ms < RASTER_WIN; ms += 100) {
+  // ── Background bands to visually separate E and I ──────────────────────────
+  const ySep = Math.round((N_EXC / N_TOTAL) * H);
+  ctx.fillStyle = '#0a0f14'; ctx.fillRect(0, 0, W, ySep);        // E region
+  ctx.fillStyle = '#100a0a'; ctx.fillRect(0, ySep, W, H - ySep); // I region (slightly warmer)
+
+  // ── 100ms time grid ────────────────────────────────────────────────────────
+  const fs = Math.max(8, Math.floor(W * 0.022));
+  ctx.font = fs + 'px monospace';
+  for (let ms = 100; ms < RASTER_WIN; ms += 100) {
     const x = Math.round(ms * xScale) + 0.5;
+    ctx.strokeStyle = '#1c2128'; ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+    // time label
+    ctx.fillStyle = '#2d333b';
+    ctx.fillText(ms + 'ms', x + 2, H - 3);
   }
 
-  // E/I separator
-  const ySep = Math.round((N_EXC / N_TOTAL) * H) + 0.5;
-  ctx.strokeStyle = '#30363d'; ctx.setLineDash([3,3]);
-  ctx.beginPath(); ctx.moveTo(0, ySep); ctx.lineTo(W, ySep); ctx.stroke();
+  // ── E/I separator line ─────────────────────────────────────────────────────
+  ctx.strokeStyle = '#30363d'; ctx.setLineDash([3, 3]); ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(0, ySep + 0.5); ctx.lineTo(W, ySep + 0.5); ctx.stroke();
   ctx.setLineDash([]);
 
-  // Spikes — two colour passes to avoid per-spike fillStyle calls
+  // ── Spikes ─────────────────────────────────────────────────────────────────
   const buf = raster;
   for (let pass = 0; pass < 2; pass++) {
     ctx.fillStyle = pass === 0 ? '#58a6ff' : '#f0883e';
@@ -139,30 +163,49 @@ function drawRaster() {
     }
   }
 
-  // "Now" line
-  ctx.strokeStyle = '#30363d'; ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(W - 1, 0); ctx.lineTo(W - 1, H); ctx.stroke();
+  // ── Section labels ─────────────────────────────────────────────────────────
+  ctx.fillStyle = '#1f4080';
+  ctx.fillRect(2, 2, W - 4, ySep - 4);  // invisible placeholder — just use text
+  // E label
+  ctx.fillStyle = '#2a5080'; ctx.fillRect(2, 2, 105 * DPR * 0.7, fs + 4);
+  ctx.fillStyle = '#58a6ff'; ctx.font = 'bold ' + fs + 'px monospace';
+  ctx.fillText('E · excitatory ×' + N_EXC, 4, fs + 2);
+  // I label
+  ctx.fillStyle = '#3a1800'; ctx.fillRect(2, ySep + 2, 105 * DPR * 0.7, fs + 4);
+  ctx.fillStyle = '#f0883e'; ctx.font = 'bold ' + fs + 'px monospace';
+  ctx.fillText('I · inhibitory ×' + (N_TOTAL - N_EXC), 4, ySep + fs + 2);
 
-  // Labels
-  const fs = Math.max(9, Math.floor(W * 0.018));
-  ctx.font = fs + 'px monospace'; ctx.fillStyle = '#30363d';
-  ctx.fillText('E', 3, ySep - 3);
-  ctx.fillText('I', 3, H - 3);
-  ctx.fillText('←400ms', W - fs * 5, H - 3);
+  // ── Drive level indicator strip (bottom 4px) ───────────────────────────────
+  const driveMode = document.getElementById('drive').value;
+  const isBurstOn = driveMode === 'burst' && (SNN.currentIext > 0);
+  const stripColor = driveMode === 'off' ? '#1c2128'
+                   : isBurstOn           ? '#f0883e'
+                   : '#3fb950';
+  ctx.fillStyle = stripColor;
+  ctx.fillRect(0, H - 4, W, 4);
+
+  // ── "now" cursor line ──────────────────────────────────────────────────────
+  ctx.strokeStyle = '#30363d'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(W - 1, 0); ctx.lineTo(W - 1, H - 4); ctx.stroke();
 }
 
+// ── Firing rate bars ──────────────────────────────────────────────────────────
 function drawRates() {
   fitCanvas(ratesCanvas);
   const ctx = rtx, W = ratesCanvas.width, H = ratesCanvas.height;
   ctx.clearRect(0, 0, W, H);
 
+  // Count spikes per neuron in the last 200ms
   const tMin = SNN.simT - 200;
-  const cnt = new Float32Array(N_TOTAL);
-  const buf = raster;
+  const cnt  = new Float32Array(N_TOTAL);
+  const buf  = raster;
   for (let k = 0; k < buf.length; k += 2)
     if (buf[k] >= tMin) cnt[buf[k + 1]]++;
 
-  const toHz = 1000 / 200, maxHz = 100, barW = W / N_TOTAL;
+  const toHz = 1000 / 200, maxHz = 80;
+  const barW = W / N_TOTAL;
+
+  // Draw bars
   for (let i = 0; i < N_TOTAL; i++) {
     const h = Math.min(H, (cnt[i] * toHz / maxHz) * H);
     ctx.fillStyle = i < N_EXC ? '#1f6feb22' : '#da363322';
@@ -171,19 +214,60 @@ function drawRates() {
     ctx.fillRect(i * barW, H - h, Math.max(1, barW - 0.5), h);
   }
 
-  const fs = Math.max(8, Math.floor(H * 0.28));
-  ctx.font = fs + 'px monospace'; ctx.fillStyle = '#30363d';
-  ctx.fillText('100Hz', 2, fs + 1);
+  // Reference lines at 20Hz and 40Hz
+  const fs = Math.max(8, Math.floor(H * 0.22));
+  ctx.font = fs + 'px monospace';
+  for (const refHz of [20, 40]) {
+    const y = H - (refHz / maxHz) * H;
+    ctx.strokeStyle = '#30363d'; ctx.lineWidth = 1; ctx.setLineDash([2, 3]);
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#30363d';
+    ctx.fillText(refHz + 'Hz', 2, y - 2);
+  }
+
+  // Section labels
+  const eSepX = Math.floor((N_EXC / N_TOTAL) * W);
+  ctx.fillStyle = '#484f58'; ctx.font = fs + 'px monospace';
+  ctx.fillText('← E', 2, H - 2);
+  ctx.fillText('I →', eSepX + 2, H - 2);
+
+  // Max label
+  ctx.fillStyle = '#484f58';
+  ctx.fillText(maxHz + 'Hz', 2, fs + 1);
 }
 
-// ── Stats ─────────────────────────────────────────────────────────────────────
+// ── Stats update ─────────────────────────────────────────────────────────────
 let lastStatT = 0;
+
 function updateStats() {
   if (SNN.simT - lastStatT < 200) return;
-  lastStatT = SNN.simT;
-  document.getElementById('simT').textContent  = SNN.simT.toFixed(0);
-  document.getElementById('popHz').textContent = popRateHz(200).toFixed(1);
+  const win = 200, tMin = SNN.simT - win;
+  let eSpk = 0, iSpk = 0;
+  for (let k = 0; k < raster.length; k += 2) {
+    if (raster[k] >= tMin) {
+      if (raster[k + 1] < N_EXC) eSpk++; else iSpk++;
+    }
+  }
+  document.getElementById('simT').textContent = SNN.simT.toFixed(0);
+  document.getElementById('eHz').textContent  = (eSpk / N_EXC     / (win / 1000)).toFixed(1);
+  document.getElementById('iHz').textContent  = (iSpk / (N_TOTAL - N_EXC) / (win / 1000)).toFixed(1);
   document.getElementById('meanW').textContent = meanEEWeight().toFixed(2) + 'nS';
+  lastStatT = SNN.simT;
+
+  // Drive indicator
+  const driveMode = document.getElementById('drive').value;
+  const ind = document.getElementById('drive-ind');
+  if (driveMode === 'off') {
+    ind.className = '';
+    ind.textContent = 'drive: off';
+  } else if (driveMode === 'burst') {
+    ind.className = SNN.currentIext > 0 ? 'burst' : '';
+    ind.textContent = SNN.currentIext > 0 ? '⚡ burst ON' : 'burst: waiting';
+  } else {
+    ind.className = 'active';
+    ind.textContent = 'drive: 250pA';
+  }
 }
 
 // ── Main loop ─────────────────────────────────────────────────────────────────
@@ -191,8 +275,8 @@ let running = false, raf = null, lastWall = 0;
 
 function frame(now) {
   if (!running) { raf = null; return; }
-  const wall = lastWall ? Math.min(now - lastWall, 50) : 16;
-  lastWall = now;
+  const wall  = lastWall ? Math.min(now - lastWall, 50) : 16;
+  lastWall    = now;
   const speed = +document.getElementById('speed').value;
   const drive = document.getElementById('drive').value;
   const steps = Math.max(1, Math.floor(Math.min(wall * speed, 200) / 0.1));
@@ -212,7 +296,8 @@ document.getElementById('resetBtn').addEventListener('click', () => {
   const was = running; setRunning(false);
   if (raf) { cancelAnimationFrame(raf); raf = null; }
   init(42); lastStatT = 0;
-  ['simT','popHz','meanW'].forEach(id => document.getElementById(id).textContent = id === 'simT' ? '0' : '–');
+  ['simT','eHz','iHz'].forEach(id => document.getElementById(id).textContent = '0');
+  document.getElementById('meanW').textContent = '–';
   drawRaster(); drawRates();
   if (was) setRunning(true);
 });
@@ -220,8 +305,7 @@ document.getElementById('resetBtn').addEventListener('click', () => {
 window.addEventListener('resize', () => { drawRaster(); drawRates(); });
 
 // Boot
-init(42);
-drawRaster(); drawRates();
+init(42); drawRaster(); drawRates();
 setRunning(true);
 </script>
 </body>
