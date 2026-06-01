@@ -62,8 +62,10 @@ export const bus = new SpikeEventBus();
 
 // Raster: flat [t0, globalId0, t1, globalId1, ...]  (globalId = E: 0..N_E-1, I: N_E..N-1)
 export const raster: number[] = [];
+export const weightHistory: number[] = [];   // sampled every 100ms sim time
 export let simT = 0;
 export let totalSpikes = 0;
+export let stdpEnabled = true;
 
 // ── Simulation state ──────────────────────────────────────────────────────────
 let excPop: Population;
@@ -88,6 +90,7 @@ let currentsE: Float64Array;
 let currentsI: Float64Array;
 
 const adex = new AdExModel();
+let weightSampleCounter = 0;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -164,6 +167,8 @@ export function init(seed = 42): void {
 
   preTraceE  = new Float32Array(N_E);
   postTraceE = new Float32Array(N_E);
+  weightHistory.length = 0;
+  weightSampleCounter  = 0;
 }
 
 // ── Simulation step ───────────────────────────────────────────────────────────
@@ -213,33 +218,41 @@ export function step(driveMode: 'tonic' | 'burst' | 'off'): void {
   }
 
   // 5. STDP on E→E: decay traces, then apply LTD (pre fires) and LTP (post fires)
-  for (let i = 0; i < N_E; i++) {
-    preTraceE[i]  = (preTraceE[i]  as number) * DECAY_PRE;
-    postTraceE[i] = (postTraceE[i] as number) * DECAY_POST;
+  if (stdpEnabled) {
+    for (let i = 0; i < N_E; i++) {
+      preTraceE[i]  = (preTraceE[i]  as number) * DECAY_PRE;
+      postTraceE[i] = (postTraceE[i] as number) * DECAY_POST;
+    }
+
+    for (const pre of spkE) {
+      for (const syn of storeEE.getOutgoing(pre)) {
+        const upd = STDP_RULE.onPreSpike(
+          syn.index, preTraceE[pre] as number, postTraceE[syn.targetIndex] as number,
+          0, syn.weight, CTX
+        );
+        if (upd.delta !== 0)
+          storeEE.setWeight(syn.index, Math.max(W_MIN, Math.min(W_MAX, syn.weight + upd.delta)));
+      }
+      preTraceE[pre] = (preTraceE[pre] as number) + 1;
+    }
+
+    for (const post of spkE) {
+      for (const syn of storeEE.getIncoming(post)) {
+        const upd = STDP_RULE.onPostSpike(
+          syn.index, preTraceE[syn.sourceIndex] as number, postTraceE[post] as number,
+          0, syn.weight, CTX
+        );
+        if (upd.delta !== 0)
+          storeEE.setWeight(syn.index, Math.max(W_MIN, Math.min(W_MAX, syn.weight + upd.delta)));
+      }
+      postTraceE[post] = (postTraceE[post] as number) + 1;
+    }
   }
 
-  for (const pre of spkE) {
-    for (const syn of storeEE.getOutgoing(pre)) {
-      const upd = STDP_RULE.onPreSpike(
-        syn.index, preTraceE[pre] as number, postTraceE[syn.targetIndex] as number,
-        0, syn.weight, CTX
-      );
-      if (upd.delta !== 0)
-        storeEE.setWeight(syn.index, Math.max(W_MIN, Math.min(W_MAX, syn.weight + upd.delta)));
-    }
-    preTraceE[pre] = (preTraceE[pre] as number) + 1;
-  }
-
-  for (const post of spkE) {
-    for (const syn of storeEE.getIncoming(post)) {
-      const upd = STDP_RULE.onPostSpike(
-        syn.index, preTraceE[syn.sourceIndex] as number, postTraceE[post] as number,
-        0, syn.weight, CTX
-      );
-      if (upd.delta !== 0)
-        storeEE.setWeight(syn.index, Math.max(W_MIN, Math.min(W_MAX, syn.weight + upd.delta)));
-    }
-    postTraceE[post] = (postTraceE[post] as number) + 1;
+  // Sample E→E weight every 100ms of sim time
+  if (++weightSampleCounter % 1000 === 0) {
+    weightHistory.push(meanEEWeight());
+    if (weightHistory.length > 600) weightHistory.shift();
   }
 
   // 6. Advance all delay lines
@@ -277,3 +290,5 @@ export const N_EXC   = N_E;
 
 /** Current drive level in pA — used by renderer to show a drive indicator */
 export let currentIext = 0;
+
+export function setStdpEnabled(v: boolean) { stdpEnabled = v; }

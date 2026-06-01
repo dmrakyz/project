@@ -29,9 +29,12 @@ var SNN = (() => {
     meanEEWeight: () => meanEEWeight,
     popRateHz: () => popRateHz,
     raster: () => raster,
+    setStdpEnabled: () => setStdpEnabled,
     simT: () => simT,
+    stdpEnabled: () => stdpEnabled,
     step: () => step,
-    totalSpikes: () => totalSpikes
+    totalSpikes: () => totalSpikes,
+    weightHistory: () => weightHistory
   });
 
   // packages/types/src/neuron.ts
@@ -822,8 +825,10 @@ var SNN = (() => {
   var CTX = makeCtx(0);
   var bus = new SpikeEventBus();
   var raster = [];
+  var weightHistory = [];
   var simT = 0;
   var totalSpikes = 0;
+  var stdpEnabled = true;
   var excPop;
   var inhPop;
   var rng;
@@ -840,6 +845,7 @@ var SNN = (() => {
   var currentsE;
   var currentsI;
   var adex = new AdExModel();
+  var weightSampleCounter = 0;
   function makePop(id, size, role) {
     return {
       id,
@@ -915,6 +921,8 @@ var SNN = (() => {
     dlII = new CircularDelayLine(MAX_DELAY_MS, DT);
     preTraceE = new Float32Array(N_E);
     postTraceE = new Float32Array(N_E);
+    weightHistory.length = 0;
+    weightSampleCounter = 0;
   }
   function step(driveMode) {
     simT += DT;
@@ -947,39 +955,45 @@ var SNN = (() => {
       for (const syn of storeII.getOutgoing(idx))
         dlII.enqueue(idx, Math.max(1, Math.round(syn.delay / DT)));
     }
-    for (let i = 0; i < N_E; i++) {
-      preTraceE[i] = preTraceE[i] * DECAY_PRE;
-      postTraceE[i] = postTraceE[i] * DECAY_POST;
-    }
-    for (const pre of spkE) {
-      for (const syn of storeEE.getOutgoing(pre)) {
-        const upd = STDP_RULE.onPreSpike(
-          syn.index,
-          preTraceE[pre],
-          postTraceE[syn.targetIndex],
-          0,
-          syn.weight,
-          CTX
-        );
-        if (upd.delta !== 0)
-          storeEE.setWeight(syn.index, Math.max(W_MIN, Math.min(W_MAX, syn.weight + upd.delta)));
+    if (stdpEnabled) {
+      for (let i = 0; i < N_E; i++) {
+        preTraceE[i] = preTraceE[i] * DECAY_PRE;
+        postTraceE[i] = postTraceE[i] * DECAY_POST;
       }
-      preTraceE[pre] = preTraceE[pre] + 1;
-    }
-    for (const post of spkE) {
-      for (const syn of storeEE.getIncoming(post)) {
-        const upd = STDP_RULE.onPostSpike(
-          syn.index,
-          preTraceE[syn.sourceIndex],
-          postTraceE[post],
-          0,
-          syn.weight,
-          CTX
-        );
-        if (upd.delta !== 0)
-          storeEE.setWeight(syn.index, Math.max(W_MIN, Math.min(W_MAX, syn.weight + upd.delta)));
+      for (const pre of spkE) {
+        for (const syn of storeEE.getOutgoing(pre)) {
+          const upd = STDP_RULE.onPreSpike(
+            syn.index,
+            preTraceE[pre],
+            postTraceE[syn.targetIndex],
+            0,
+            syn.weight,
+            CTX
+          );
+          if (upd.delta !== 0)
+            storeEE.setWeight(syn.index, Math.max(W_MIN, Math.min(W_MAX, syn.weight + upd.delta)));
+        }
+        preTraceE[pre] = preTraceE[pre] + 1;
       }
-      postTraceE[post] = postTraceE[post] + 1;
+      for (const post of spkE) {
+        for (const syn of storeEE.getIncoming(post)) {
+          const upd = STDP_RULE.onPostSpike(
+            syn.index,
+            preTraceE[syn.sourceIndex],
+            postTraceE[post],
+            0,
+            syn.weight,
+            CTX
+          );
+          if (upd.delta !== 0)
+            storeEE.setWeight(syn.index, Math.max(W_MIN, Math.min(W_MAX, syn.weight + upd.delta)));
+        }
+        postTraceE[post] = postTraceE[post] + 1;
+      }
+    }
+    if (++weightSampleCounter % 1e3 === 0) {
+      weightHistory.push(meanEEWeight());
+      if (weightHistory.length > 600) weightHistory.shift();
     }
     dlEE.advance();
     dlEI.advance();
@@ -1009,5 +1023,8 @@ var SNN = (() => {
   var N_TOTAL = N_E + N_I;
   var N_EXC = N_E;
   var currentIext = 0;
+  function setStdpEnabled(v) {
+    stdpEnabled = v;
+  }
   return __toCommonJS(main_exports);
 })();

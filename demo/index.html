@@ -47,6 +47,7 @@
     button:active { background: #30363d; }
     #playBtn { background: #1f6feb; border-color: #388bfd; min-width: 76px; }
     #playBtn:active { background: #388bfd; }
+    #stdpBtn.off { background: #3a1a00; border-color: #f0883e; color: #f0883e; }
     select { padding: 4px 5px; border-radius: 5px; border: 1px solid #30363d;
       background: #21262d; color: #e6edf3; font-size: 12px; font-family: inherit; min-height: 28px; }
     label { font-size: 11px; color: #8b949e; }
@@ -67,20 +68,21 @@
     <div id="drive-ind">drive: off</div>
   </div>
   <div class="hd-row2">
-    Top panel: each dot = one neuron firing (spike).
-    Blue = excitatory (E, 80 neurons) · Orange = inhibitory (I, 20 neurons).
-    Bottom panel: current firing rate per neuron over last 200ms.
+    Top: each dot = one neuron firing (spike). Blue = excitatory (E, 80 neurons) · Orange = inhibitory (I, 20 neurons).
+    Middle: firing rate per neuron (last 200ms). Bottom: mean E→E synaptic weight — STDP learning in real time.
   </div>
 </div>
 
 <div id="cvs-wrap">
   <div class="cw" style="flex:3"><canvas id="raster"></canvas></div>
   <div class="cw" style="flex:1"><canvas id="rates"></canvas></div>
+  <div class="cw" style="flex:1"><canvas id="weights"></canvas></div>
 </div>
 
 <div id="ft">
   <button id="playBtn">▶ Play</button>
   <button id="resetBtn">↺ Reset</button>
+  <button id="stdpBtn">STDP: ON</button>
   <div class="spacer"></div>
   <label>Speed</label>
   <select id="speed">
@@ -104,10 +106,12 @@
 const { init, step, meanEEWeight, raster, N_EXC, N_TOTAL } = SNN;
 
 // ── Canvas setup ──────────────────────────────────────────────────────────────
-const rasterCanvas = document.getElementById('raster');
-const ratesCanvas  = document.getElementById('rates');
+const rasterCanvas  = document.getElementById('raster');
+const ratesCanvas   = document.getElementById('rates');
+const weightsCanvas = document.getElementById('weights');
 const rcx = rasterCanvas.getContext('2d');
 const rtx = ratesCanvas.getContext('2d');
+const wtx = weightsCanvas.getContext('2d');
 const DPR = Math.min(window.devicePixelRatio || 1, 2);
 const RASTER_WIN = 400; // ms shown
 
@@ -127,7 +131,8 @@ function drawRaster() {
   const tMin = tNow - RASTER_WIN;
   const xScale = W / RASTER_WIN;
   const yScale = H / N_TOTAL;
-  const dotH   = Math.max(1.5, yScale * 0.8);
+  // Cap dot height so individual rows are always distinguishable
+  const dotH   = Math.max(1, Math.min(yScale * 0.7, 3));
 
   // ── Background bands to visually separate E and I ──────────────────────────
   const ySep = Math.round((N_EXC / N_TOTAL) * H);
@@ -141,7 +146,6 @@ function drawRaster() {
     const x = Math.round(ms * xScale) + 0.5;
     ctx.strokeStyle = '#1c2128'; ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
-    // time label
     ctx.fillStyle = '#2d333b';
     ctx.fillText(ms + 'ms', x + 2, H - 3);
   }
@@ -163,9 +167,7 @@ function drawRaster() {
     }
   }
 
-  // ── Section labels ─────────────────────────────────────────────────────────
-  ctx.fillStyle = '#1f4080';
-  ctx.fillRect(2, 2, W - 4, ySep - 4);  // invisible placeholder — just use text
+  // ── Section labels (drawn last so they sit on top of spikes) ───────────────
   // E label
   ctx.fillStyle = '#2a5080'; ctx.fillRect(2, 2, 105 * DPR * 0.7, fs + 4);
   ctx.fillStyle = '#58a6ff'; ctx.font = 'bold ' + fs + 'px monospace';
@@ -237,6 +239,64 @@ function drawRates() {
   ctx.fillText(maxHz + 'Hz', 2, fs + 1);
 }
 
+// ── E→E weight history (STDP learning) ───────────────────────────────────────
+function drawWeights() {
+  fitCanvas(weightsCanvas);
+  const ctx = wtx, W = weightsCanvas.width, H = weightsCanvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  const history = SNN.weightHistory;
+  const fs = Math.max(8, Math.floor(H * 0.22));
+  ctx.font = fs + 'px monospace';
+
+  // Label
+  const stdpOn = SNN.stdpEnabled;
+  ctx.fillStyle = stdpOn ? '#388bfd' : '#484f58';
+  ctx.fillText('mean E→E weight · STDP ' + (stdpOn ? 'ON' : 'OFF'), 2, fs + 1);
+
+  if (history.length < 2) {
+    ctx.fillStyle = '#2d333b';
+    ctx.fillText('accumulating…', 4, H / 2 + fs / 2);
+    return;
+  }
+
+  const W_MAX = 6;
+  const yPad = fs + 6;
+  const plotH = H - yPad - 4;
+
+  // Horizontal reference lines
+  for (const refW of [1, 2, 3, 4, 5]) {
+    const y = Math.round(yPad + plotH * (1 - refW / W_MAX)) + 0.5;
+    ctx.strokeStyle = '#1c2128'; ctx.lineWidth = 1; ctx.setLineDash([2, 3]);
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#2d333b';
+    ctx.fillText(refW + 'nS', 2, y - 2);
+  }
+
+  // Weight history line
+  const xScale = W / Math.max(history.length - 1, 1);
+  ctx.strokeStyle = stdpOn ? '#388bfd' : '#484f58';
+  ctx.lineWidth = 1.5; ctx.setLineDash([]);
+  ctx.beginPath();
+  for (let i = 0; i < history.length; i++) {
+    const x = i * xScale;
+    const y = yPad + plotH * (1 - history[i] / W_MAX);
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+
+  // Current value
+  const cur = history[history.length - 1];
+  ctx.fillStyle = stdpOn ? '#388bfd' : '#8b949e';
+  ctx.fillText(cur.toFixed(3) + 'nS now', W - 72 * DPR * 0.8, fs + 1);
+
+  // Time axis label
+  ctx.fillStyle = '#2d333b';
+  ctx.fillText('← ' + (history.length / 10).toFixed(0) + 's ago', 2, H - 2);
+  ctx.fillText('now →', W - 44 * DPR * 0.8, H - 2);
+}
+
 // ── Stats update ─────────────────────────────────────────────────────────────
 let lastStatT = 0;
 
@@ -281,7 +341,7 @@ function frame(now) {
   const drive = document.getElementById('drive').value;
   const steps = Math.max(1, Math.floor(Math.min(wall * speed, 200) / 0.1));
   for (let s = 0; s < steps; s++) step(drive);
-  drawRaster(); drawRates(); updateStats();
+  drawRaster(); drawRates(); drawWeights(); updateStats();
   raf = requestAnimationFrame(frame);
 }
 
@@ -298,14 +358,21 @@ document.getElementById('resetBtn').addEventListener('click', () => {
   init(42); lastStatT = 0;
   ['simT','eHz','iHz'].forEach(id => document.getElementById(id).textContent = '0');
   document.getElementById('meanW').textContent = '–';
-  drawRaster(); drawRates();
+  drawRaster(); drawRates(); drawWeights();
   if (was) setRunning(true);
 });
+document.getElementById('stdpBtn').addEventListener('click', () => {
+  const btn = document.getElementById('stdpBtn');
+  const nowOn = !SNN.stdpEnabled;
+  SNN.setStdpEnabled(nowOn);
+  btn.textContent = nowOn ? 'STDP: ON' : 'STDP: OFF';
+  btn.className   = nowOn ? '' : 'off';
+});
 
-window.addEventListener('resize', () => { drawRaster(); drawRates(); });
+window.addEventListener('resize', () => { drawRaster(); drawRates(); drawWeights(); });
 
 // Boot
-init(42); drawRaster(); drawRates();
+init(42); drawRaster(); drawRates(); drawWeights();
 setRunning(true);
 </script>
 </body>
