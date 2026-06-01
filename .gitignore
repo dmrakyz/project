@@ -5,3 +5,5 @@ dist/
 *.d.ts.map
 target/
 *.wasm
+# Keep demo/bundle.js committed — it's the pre-built artifact users open directly
+!demo/bundle.js

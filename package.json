@@ -12,11 +12,13 @@
     "test:watch": "node --experimental-vm-modules node_modules/.bin/jest --watch",
     "clean": "find packages -name '*.js' -not -path '*/node_modules/*' -delete && find packages -name '*.d.ts' -not -path '*/node_modules/*' -delete",
     "typecheck": "tsc --build --noEmit",
-    "benchmark": "node tools/benchmark/run.js"
+    "benchmark": "node tools/benchmark/run.js",
+    "demo:bundle": "esbuild demo/main.ts --bundle --format=iife --global-name=SNN --outfile=demo/bundle.js --alias:@snn/types=./packages/types/src/index.ts --alias:@snn/neurons=./packages/neurons/src/index.ts --alias:@snn/network=./packages/network/src/index.ts --alias:@snn/plasticity=./packages/plasticity/src/index.ts --alias:@snn/observability=./packages/observability/src/index.ts --alias:@snn/config=./packages/config/src/index.ts"
   },
   "devDependencies": {
     "@types/jest": "^29.5.14",
     "@types/node": "^22.0.0",
+    "esbuild": "^0.28.0",
     "jest": "^29.7.0",
     "ts-jest": "^29.2.5",
     "typescript": "^5.7.3"

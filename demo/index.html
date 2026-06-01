@@ -3,123 +3,41 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>SNN · AdEx Network</title>
+  <title>SNN · AdEx Demo</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    html, body {
-      height: 100%;
-      background: #0d1117;
-      color: #e6edf3;
-      font-family: -apple-system, BlinkMacSystemFont, 'SF Mono', 'Fira Code', ui-monospace, monospace;
-      overflow: hidden;
-    }
-
+    html, body { height: 100%; background: #0d1117; color: #e6edf3;
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Mono', ui-monospace, monospace;
+      overflow: hidden; }
     body { display: flex; flex-direction: column; }
 
-    /* ── Header ── */
     #hd {
-      flex-shrink: 0;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 5px 12px;
-      background: #161b22;
-      border-bottom: 1px solid #21262d;
-      min-height: 36px;
+      flex-shrink: 0; display: flex; align-items: center; gap: 10px;
+      padding: 5px 12px; background: #161b22; border-bottom: 1px solid #21262d; min-height: 36px;
     }
-    #hd h1 {
-      font-size: 12px;
-      font-weight: 700;
-      color: #58a6ff;
-      white-space: nowrap;
-    }
-    #stats {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      font-size: 11px;
-      color: #8b949e;
-      flex: 1;
-    }
+    #hd h1 { font-size: 12px; font-weight: 700; color: #58a6ff; white-space: nowrap; }
+    #stats { display: flex; flex-wrap: wrap; gap: 8px; font-size: 11px; color: #8b949e; flex: 1; }
     .sv { color: #e6edf3; font-weight: 600; }
-    #legend {
-      font-size: 10px;
-      display: flex;
-      gap: 6px;
-      white-space: nowrap;
-    }
-    .le { color: #58a6ff; }
-    .li { color: #f0883e; }
+    #legend { font-size: 10px; display: flex; gap: 6px; white-space: nowrap; }
+    .le { color: #58a6ff; } .li { color: #f0883e; }
 
-    /* ── Canvas area ── */
-    #cvs-wrap {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      padding: 5px 5px 3px;
-      min-height: 0;
-    }
-    .cw {
-      position: relative;
-      min-height: 0;
-    }
-    .cw-raster { flex: 3; }
-    .cw-rates  { flex: 1; }
-    canvas {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      background: #010409;
-      border: 1px solid #21262d;
-      border-radius: 4px;
-      display: block;
-    }
+    #cvs-wrap { flex: 1; display: flex; flex-direction: column; gap: 4px; padding: 5px 5px 3px; min-height: 0; }
+    .cw { position: relative; min-height: 0; }
+    canvas { position: absolute; inset: 0; width: 100%; height: 100%;
+      background: #010409; border: 1px solid #21262d; border-radius: 4px; display: block; }
 
-    /* ── Footer ── */
     #ft {
-      flex-shrink: 0;
-      display: flex;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 5px;
-      padding: 5px 10px;
-      background: #161b22;
-      border-top: 1px solid #21262d;
-      min-height: 38px;
+      flex-shrink: 0; display: flex; align-items: center; flex-wrap: wrap;
+      gap: 5px; padding: 5px 10px; background: #161b22; border-top: 1px solid #21262d; min-height: 38px;
     }
-    button {
-      padding: 5px 14px;
-      border-radius: 5px;
-      border: 1px solid #30363d;
-      background: #21262d;
-      color: #e6edf3;
-      font-size: 12px;
-      font-family: inherit;
-      cursor: pointer;
-      -webkit-tap-highlight-color: transparent;
-      touch-action: manipulation;
-      min-height: 28px;
-    }
+    button { padding: 5px 14px; border-radius: 5px; border: 1px solid #30363d;
+      background: #21262d; color: #e6edf3; font-size: 12px; font-family: inherit;
+      cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation; min-height: 28px; }
     button:active { background: #30363d; }
-    #playBtn {
-      background: #1f6feb;
-      border-color: #388bfd;
-      min-width: 76px;
-    }
+    #playBtn { background: #1f6feb; border-color: #388bfd; min-width: 76px; }
     #playBtn:active { background: #388bfd; }
-    select {
-      padding: 4px 5px;
-      border-radius: 5px;
-      border: 1px solid #30363d;
-      background: #21262d;
-      color: #e6edf3;
-      font-size: 12px;
-      font-family: inherit;
-      min-height: 28px;
-    }
+    select { padding: 4px 5px; border-radius: 5px; border: 1px solid #30363d;
+      background: #21262d; color: #e6edf3; font-size: 12px; font-family: inherit; min-height: 28px; }
     label { font-size: 11px; color: #8b949e; }
     .spacer { flex: 1; }
   </style>
@@ -130,18 +48,15 @@
   <h1>SNN · AdEx</h1>
   <div id="stats">
     <div>t=<span class="sv" id="simT">0</span>ms</div>
-    <div>pop=<span class="sv" id="popHz">–</span>Hz</div>
+    <div>Hz=<span class="sv" id="popHz">–</span></div>
     <div>⟨w<sub>EE</sub>⟩=<span class="sv" id="meanW">–</span></div>
   </div>
-  <div id="legend">
-    <span class="le">■ E×80</span>
-    <span class="li">■ I×20</span>
-  </div>
+  <div id="legend"><span class="le">■ E×80</span><span class="li">■ I×20</span></div>
 </div>
 
 <div id="cvs-wrap">
-  <div class="cw cw-raster"><canvas id="raster"></canvas></div>
-  <div class="cw cw-rates" ><canvas id="rates" ></canvas></div>
+  <div class="cw" style="flex:3"><canvas id="raster"></canvas></div>
+  <div class="cw" style="flex:1"><canvas id="rates"></canvas></div>
 </div>
 
 <div id="ft">
@@ -157,403 +72,132 @@
   </select>
   <label>Drive</label>
   <select id="drive">
-    <option value="tonic"  selected>Tonic</option>
+    <option value="tonic" selected>Tonic</option>
     <option value="burst">Burst</option>
     <option value="off">Silent</option>
   </select>
 </div>
 
+<!-- Compiled bundle from actual TypeScript packages:
+     @snn/neurons, @snn/network, @snn/plasticity, @snn/observability, @snn/config, @snn/types -->
+<script src="bundle.js"></script>
 <script>
 'use strict';
-/*
- * Self-contained AdEx SNN demo.
- *
- * Implements the same equations as packages/neurons/src/adex.ts and
- * rust-core/crates/neurons/src/adex.rs — identical integration method
- * (Exponential Euler for V, forward Euler for w, exact exp decay for g).
- *
- * Network: 80 regular-spiking excitatory + 20 fast-spiking inhibitory AdEx
- * neurons. Sparse random connectivity with AMPA (E→*) and GABA-A (I→*).
- * STDP (nearest-neighbor) runs only on E→E synapses.
- */
 
-// ── Constants ────────────────────────────────────────────────────────────────
+// SNN is the IIFE global exported by bundle.js (built from demo/main.ts)
+// It wraps the actual platform packages: AdExModel, buildCSRStore, STDPRule, etc.
+const { init, step, meanEEWeight, popRateHz, raster, N_EXC, N_TOTAL } = SNN;
 
-const DT    = 0.1;   // timestep ms
-const N_E   = 80;    // excitatory neurons
-const N_I   = 20;    // inhibitory neurons
-const N     = N_E + N_I;
-
-const TAU_AMPA   = 5.0;   // ms — AMPA conductance decay
-const TAU_GABA   = 10.0;  // ms — GABA-A conductance decay
-const EXP_CLAMP  = 20.0;  // clamp (V-VT)/ΔT to prevent exp overflow
-
-// AdEx — regular spiking excitatory (Brette & Gerstner 2005 Fig 2a)
-const PE = { Cm:200, gL:10,  EL:-70, VT:-50, dT:2,   Vpk:0, tauW:200, a:2,  b:0,   Vr:-58, tRef:2, EE:0, EI:-70 };
-// AdEx — fast spiking inhibitory (shorter τ_m = Cm/gL = 5ms)
-const PI = { Cm:100, gL:20,  EL:-65, VT:-50, dT:0.5, Vpk:0, tauW:100, a:0,  b:0,   Vr:-58, tRef:1, EE:0, EI:-70 };
-
-// Connectivity (sparse random)
-const P_EE = 0.10, P_EI = 0.20, P_IE = 0.30, P_II = 0.10;
-
-// Initial weight mu (nS), log-normal with σ=0.3
-const W0_EE = 1.2, W0_EI = 1.5, W0_IE = 2.0, W0_II = 1.0;
-const W_MIN = 0, W_MAX = 6; // nS
-
-// STDP (E→E only, nearest-neighbour)
-const A_PLUS  = 0.01;   // LTP magnitude
-const A_MINUS = 0.012;  // LTD magnitude (slight asymmetry → BCM-like drift)
-const TAU_PRE  = 20;    // ms — pre-synaptic trace
-const TAU_POST = 20;    // ms — post-synaptic trace
-
-// Drive strength
-const DRIVE_TONIC = 200; // pA constant to all E neurons
-const DRIVE_BURST = 600; // pA, 5ms pulses every 100ms
-
-// ── Precomputed decay factors ─────────────────────────────────────────────────
-
-const DA   = Math.exp(-DT / TAU_AMPA);
-const DG   = Math.exp(-DT / TAU_GABA);
-const DPRE = Math.exp(-DT / TAU_PRE);
-const DPOST= Math.exp(-DT / TAU_POST);
-
-// ── State arrays ──────────────────────────────────────────────────────────────
-
-let V, w, ge, gi, ref;           // membrane state
-let preTr, postTr;                // STDP traces
-let wts, stype, stdpMask;         // NxN connectivity (flat row-major)
-let simT, spkCnt, lastStatT;
-
-// Raster: flat [t0, id0, t1, id1, …] — times first for fast pruning
-const RASTER_WIN = 400; // ms displayed
-let raster;
-
-// ── PRNG: seeded xorshift32 ───────────────────────────────────────────────────
-
-let _seed;
-function rand() {
-  _seed = (_seed ^ (_seed << 13)) >>> 0;
-  _seed = (_seed ^ (_seed >>> 17)) >>> 0;
-  _seed = (_seed ^ (_seed << 5))  >>> 0;
-  return _seed / 4294967296;
-}
-function randN() {
-  // Box-Muller
-  const u = Math.max(rand(), 1e-12), v = rand();
-  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
-}
-
-// ── init ──────────────────────────────────────────────────────────────────────
-
-function initSim() {
-  _seed = 42;
-  simT = 0; spkCnt = 0; lastStatT = 0;
-  raster = [];
-
-  V     = new Float64Array(N);
-  w     = new Float64Array(N);
-  ge    = new Float64Array(N);
-  gi    = new Float64Array(N);
-  ref   = new Float64Array(N);
-  preTr = new Float64Array(N);
-  postTr= new Float64Array(N);
-
-  wts      = new Float32Array(N * N);
-  stype    = new Uint8Array(N * N);  // 0=none 1=AMPA 2=GABA
-  stdpMask = new Uint8Array(N * N);  // 1 if E→E (STDP enabled)
-
-  // Init voltages near resting potential
-  for (let i = 0; i < N; i++) {
-    const p = i < N_E ? PE : PI;
-    V[i] = p.EL + randN() * 3;
-  }
-
-  // Random sparse connectivity
-  for (let pre = 0; pre < N; pre++) {
-    const preE = pre < N_E;
-    for (let post = 0; post < N; post++) {
-      if (pre === post) continue;
-      const postE = post < N_E;
-
-      let prob, w0, st, stdp;
-      if      ( preE &&  postE) { prob = P_EE; w0 = W0_EE; st = 1; stdp = 1; }
-      else if ( preE && !postE) { prob = P_EI; w0 = W0_EI; st = 1; stdp = 0; }
-      else if (!preE &&  postE) { prob = P_IE; w0 = W0_IE; st = 2; stdp = 0; }
-      else                      { prob = P_II; w0 = W0_II; st = 2; stdp = 0; }
-
-      if (rand() < prob) {
-        const idx = pre * N + post;
-        wts[idx]      = Math.max(W_MIN, Math.min(W_MAX, w0 * Math.exp(randN() * 0.3)));
-        stype[idx]    = st;
-        stdpMask[idx] = stdp;
-      }
-    }
-  }
-}
-
-// ── simulation step ───────────────────────────────────────────────────────────
-
-const _spk = new Uint8Array(N); // reused per step
-
-function step(driveMode) {
-  simT += DT;
-  _spk.fill(0);
-
-  // Decay STDP traces (exact exponential)
-  for (let i = 0; i < N; i++) {
-    preTr[i]  *= DPRE;
-    postTr[i] *= DPOST;
-  }
-
-  // External drive (E neurons only)
-  let Iext = 0;
-  if      (driveMode === 'tonic') { Iext = DRIVE_TONIC; }
-  else if (driveMode === 'burst') { Iext = (simT % 100) < 5 ? DRIVE_BURST : 0; }
-
-  // ── Membrane dynamics ──────────────────────────────────────────────────────
-  for (let i = 0; i < N; i++) {
-    // Exact exponential decay of synaptic conductances
-    ge[i] *= DA;
-    gi[i] *= DG;
-
-    if (ref[i] > 0) { ref[i] = Math.max(0, ref[i] - DT); continue; }
-
-    const p  = i < N_E ? PE : PI;
-    const Vi = V[i], wi = w[i];
-
-    // Conductance-based synaptic current (pA = nS × mV)
-    const Isyn = ge[i] * (p.EE - Vi) + gi[i] * (p.EI - Vi);
-    const Itot = Isyn + (i < N_E ? Iext : 0) - wi;
-
-    // Exponential Euler for voltage
-    const ea  = Math.min((Vi - p.VT) / p.dT, EXP_CLAMP);
-    const dVdt = (-p.gL * (Vi - p.EL) + p.gL * p.dT * Math.exp(ea) + Itot) / p.Cm;
-    const Vnew = Vi + dVdt * DT;
-
-    // Forward Euler for adaptation
-    const dwdt = (p.a * (Vi - p.EL) - wi) / p.tauW;
-    w[i] = wi + dwdt * DT;
-
-    if (Vnew >= p.Vpk) {
-      V[i]    = p.Vpk;
-      _spk[i] = 1;
-    } else {
-      V[i] = Vnew;
-    }
-  }
-
-  // ── Post-spike: reset, conductance delivery, STDP LTD ────────────────────
-  for (let pre = 0; pre < N; pre++) {
-    if (!_spk[pre]) continue;
-
-    const p  = pre < N_E ? PE : PI;
-    V[pre]    = p.Vr;
-    w[pre]   += p.b;
-    ref[pre]  = p.tRef;
-    spkCnt++;
-
-    // Append to raster buffer
-    raster.push(simT, pre);
-
-    // Deliver spike: increment conductance of post-synaptic neurons
-    const row = pre * N;
-    for (let post = 0; post < N; post++) {
-      const idx = row + post;
-      const st  = stype[idx];
-      if (!st) continue;
-
-      const g = wts[idx];
-      if (st === 1) ge[post] += g;
-      else          gi[post] += g;
-
-      // STDP LTD: pre fires, post was active → reduce weight
-      if (stdpMask[idx]) {
-        wts[idx] = Math.max(W_MIN, Math.min(W_MAX, g - A_MINUS * postTr[post]));
-      }
-    }
-
-    // Advance pre-synaptic trace
-    preTr[pre] += 1;
-  }
-
-  // ── STDP LTP: post fires, pre was recently active → increase weight ───────
-  for (let post = 0; post < N; post++) {
-    if (!_spk[post]) continue;
-    postTr[post] += 1;
-
-    for (let pre = 0; pre < N; pre++) {
-      const idx = pre * N + post;
-      if (!stdpMask[idx]) continue;
-      wts[idx] = Math.max(W_MIN, Math.min(W_MAX, wts[idx] + A_PLUS * preTr[pre]));
-    }
-  }
-
-  // ── Prune stale raster entries (lazy, every ~10K entries) ─────────────────
-  if (raster.length > 16000) {
-    const tCut = simT - RASTER_WIN * 1.5;
-    let start = 0;
-    while (start < raster.length && raster[start] < tCut) start += 2;
-    if (start > 0) raster.splice(0, start);
-  }
-}
-
-// ── Canvas helpers ────────────────────────────────────────────────────────────
-
+// ── Canvas setup ──────────────────────────────────────────────────────────────
 const rasterCanvas = document.getElementById('raster');
 const ratesCanvas  = document.getElementById('rates');
 const rcx = rasterCanvas.getContext('2d');
 const rtx  = ratesCanvas.getContext('2d');
-const DPR  = Math.min(window.devicePixelRatio || 1, 2); // cap at 2 for perf
+const DPR  = Math.min(window.devicePixelRatio || 1, 2);
+const RASTER_WIN = 400; // ms
 
-function fitCanvas(canvas) {
-  const r = canvas.parentElement.getBoundingClientRect();
+function fitCanvas(c) {
+  const r = c.parentElement.getBoundingClientRect();
   const nw = Math.floor(r.width  * DPR);
   const nh = Math.floor(r.height * DPR);
-  if (canvas.width !== nw || canvas.height !== nh) {
-    canvas.width  = nw;
-    canvas.height = nh;
-  }
+  if (c.width !== nw || c.height !== nh) { c.width = nw; c.height = nh; }
 }
 
-// ── Render: spike raster ──────────────────────────────────────────────────────
-
+// ── Rendering ─────────────────────────────────────────────────────────────────
 function drawRaster() {
   fitCanvas(rasterCanvas);
-  const ctx = rcx;
-  const W = rasterCanvas.width, H = rasterCanvas.height;
+  const ctx = rcx, W = rasterCanvas.width, H = rasterCanvas.height;
   ctx.clearRect(0, 0, W, H);
 
-  const tMin   = simT - RASTER_WIN;
-  const xScale = W / RASTER_WIN;
-  const yScale = H / N;
-  const dotH   = Math.max(1.5, yScale * 0.8);
+  const tNow = SNN.simT;
+  const tMin = tNow - RASTER_WIN;
+  const xScale = W / RASTER_WIN, yScale = H / N_TOTAL;
+  const dotH = Math.max(1.5, yScale * 0.8);
 
-  // Faint 100ms grid lines
-  ctx.strokeStyle = '#1c2128';
-  ctx.lineWidth   = 1;
+  // 100ms grid
+  ctx.strokeStyle = '#1c2128'; ctx.lineWidth = 1;
   for (let ms = 0; ms < RASTER_WIN; ms += 100) {
     const x = Math.round(ms * xScale) + 0.5;
     ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
   }
 
-  // E/I boundary
-  const ySep = Math.round((N_E / N) * H) + 0.5;
-  ctx.strokeStyle = '#30363d';
-  ctx.setLineDash([3, 3]);
+  // E/I separator
+  const ySep = Math.round((N_EXC / N_TOTAL) * H) + 0.5;
+  ctx.strokeStyle = '#30363d'; ctx.setLineDash([3,3]);
   ctx.beginPath(); ctx.moveTo(0, ySep); ctx.lineTo(W, ySep); ctx.stroke();
   ctx.setLineDash([]);
 
-  // Spikes — two passes to batch by colour
+  // Spikes — two colour passes to avoid per-spike fillStyle calls
   const buf = raster;
   for (let pass = 0; pass < 2; pass++) {
     ctx.fillStyle = pass === 0 ? '#58a6ff' : '#f0883e';
-    const lo = pass === 0 ? 0 : N_E;
-    const hi = pass === 0 ? N_E : N;
+    const lo = pass === 0 ? 0 : N_EXC, hi = pass === 0 ? N_EXC : N_TOTAL;
     for (let k = 0; k < buf.length; k += 2) {
-      const st = buf[k];
-      if (st < tMin) continue;
-      const id = buf[k + 1];
-      if (id < lo || id >= hi) continue;
-      ctx.fillRect(
-        Math.floor((st - tMin) * xScale),
-        Math.floor(id * yScale),
-        2, dotH
-      );
+      const t = buf[k]; if (t < tMin) continue;
+      const id = buf[k + 1]; if (id < lo || id >= hi) continue;
+      ctx.fillRect(Math.floor((t - tMin) * xScale), Math.floor(id * yScale), 2, dotH);
     }
   }
 
-  // "now" line
-  ctx.strokeStyle = '#30363d';
-  ctx.lineWidth = 1;
+  // "Now" line
+  ctx.strokeStyle = '#30363d'; ctx.lineWidth = 1;
   ctx.beginPath(); ctx.moveTo(W - 1, 0); ctx.lineTo(W - 1, H); ctx.stroke();
 
   // Labels
   const fs = Math.max(9, Math.floor(W * 0.018));
-  ctx.font = `${fs}px monospace`;
-  ctx.fillStyle = '#30363d';
+  ctx.font = fs + 'px monospace'; ctx.fillStyle = '#30363d';
   ctx.fillText('E', 3, ySep - 3);
   ctx.fillText('I', 3, H - 3);
-  ctx.fillStyle = '#21262d';
   ctx.fillText('←400ms', W - fs * 5, H - 3);
 }
 
-// ── Render: per-neuron firing rates ──────────────────────────────────────────
-
 function drawRates() {
   fitCanvas(ratesCanvas);
-  const ctx = rtx;
-  const W = ratesCanvas.width, H = ratesCanvas.height;
+  const ctx = rtx, W = ratesCanvas.width, H = ratesCanvas.height;
   ctx.clearRect(0, 0, W, H);
 
-  // Count spikes per neuron in last 200ms
-  const tMin = simT - 200;
-  const cnt  = new Float32Array(N);
-  const buf  = raster;
-  for (let k = 0; k < buf.length; k += 2) {
+  const tMin = SNN.simT - 200;
+  const cnt = new Float32Array(N_TOTAL);
+  const buf = raster;
+  for (let k = 0; k < buf.length; k += 2)
     if (buf[k] >= tMin) cnt[buf[k + 1]]++;
-  }
-  const toHz  = 1000 / 200;
-  const maxHz = 100;
-  const barW  = W / N;
 
-  for (let i = 0; i < N; i++) {
-    const hz = cnt[i] * toHz;
-    const bh = Math.min(H, (hz / maxHz) * H);
-    // Background tint
-    ctx.fillStyle = i < N_E ? '#1f6feb22' : '#da363322';
+  const toHz = 1000 / 200, maxHz = 100, barW = W / N_TOTAL;
+  for (let i = 0; i < N_TOTAL; i++) {
+    const h = Math.min(H, (cnt[i] * toHz / maxHz) * H);
+    ctx.fillStyle = i < N_EXC ? '#1f6feb22' : '#da363322';
     ctx.fillRect(i * barW, 0, Math.max(1, barW - 0.5), H);
-    // Filled bar
-    ctx.fillStyle = i < N_E ? '#1f6feb' : '#da3633';
-    ctx.fillRect(i * barW, H - bh, Math.max(1, barW - 0.5), bh);
+    ctx.fillStyle = i < N_EXC ? '#1f6feb' : '#da3633';
+    ctx.fillRect(i * barW, H - h, Math.max(1, barW - 0.5), h);
   }
 
-  // Axis labels
   const fs = Math.max(8, Math.floor(H * 0.28));
-  ctx.font = `${fs}px monospace`;
-  ctx.fillStyle = '#30363d';
-  ctx.fillText(`${maxHz}Hz`, 2, fs + 1);
+  ctx.font = fs + 'px monospace'; ctx.fillStyle = '#30363d';
+  ctx.fillText('100Hz', 2, fs + 1);
 }
 
-// ── Stats update ─────────────────────────────────────────────────────────────
-
+// ── Stats ─────────────────────────────────────────────────────────────────────
+let lastStatT = 0;
 function updateStats() {
-  if (simT - lastStatT < 200) return;
-  const elapsed = simT - lastStatT;
-  const hz = ((spkCnt / elapsed) * 1000 / N).toFixed(1);
-  document.getElementById('simT').textContent    = simT.toFixed(0);
-  document.getElementById('popHz').textContent   = hz;
-  spkCnt = 0; lastStatT = simT;
-
-  // Mean E→E weight (only connected synapses)
-  let sum = 0, n = 0;
-  for (let i = 0; i < N * N; i++) {
-    if (stdpMask[i]) { sum += wts[i]; n++; }
-  }
-  document.getElementById('meanW').textContent =
-    n > 0 ? (sum / n).toFixed(2) + 'nS' : '–';
+  if (SNN.simT - lastStatT < 200) return;
+  lastStatT = SNN.simT;
+  document.getElementById('simT').textContent  = SNN.simT.toFixed(0);
+  document.getElementById('popHz').textContent = popRateHz(200).toFixed(1);
+  document.getElementById('meanW').textContent = meanEEWeight().toFixed(2) + 'nS';
 }
 
 // ── Main loop ─────────────────────────────────────────────────────────────────
-
 let running = false, raf = null, lastWall = 0;
 
 function frame(now) {
   if (!running) { raf = null; return; }
-
-  const wall  = lastWall ? Math.min(now - lastWall, 50) : 16; // cap at 50ms
-  lastWall    = now;
+  const wall = lastWall ? Math.min(now - lastWall, 50) : 16;
+  lastWall = now;
   const speed = +document.getElementById('speed').value;
   const drive = document.getElementById('drive').value;
-
-  // Simulate up to (speed × elapsed wall time) of sim time, capped to 200ms
-  const simMs = Math.min(wall * speed, 200);
-  const steps = Math.max(1, Math.floor(simMs / DT));
+  const steps = Math.max(1, Math.floor(Math.min(wall * speed, 200) / 0.1));
   for (let s = 0; s < steps; s++) step(drive);
-
-  drawRaster();
-  drawRates();
-  updateStats();
-
+  drawRaster(); drawRates(); updateStats();
   raf = requestAnimationFrame(frame);
 }
 
@@ -565,24 +209,19 @@ function setRunning(on) {
 
 document.getElementById('playBtn') .addEventListener('click', () => setRunning(!running));
 document.getElementById('resetBtn').addEventListener('click', () => {
-  const was = running;
-  setRunning(false);
+  const was = running; setRunning(false);
   if (raf) { cancelAnimationFrame(raf); raf = null; }
-  initSim();
-  drawRaster();
-  drawRates();
-  document.getElementById('simT').textContent  = '0';
-  document.getElementById('popHz').textContent = '–';
-  document.getElementById('meanW').textContent = '–';
+  init(42); lastStatT = 0;
+  ['simT','popHz','meanW'].forEach(id => document.getElementById(id).textContent = id === 'simT' ? '0' : '–');
+  drawRaster(); drawRates();
   if (was) setRunning(true);
 });
 
 window.addEventListener('resize', () => { drawRaster(); drawRates(); });
 
-// ── Boot ──────────────────────────────────────────────────────────────────────
-initSim();
-drawRaster();
-drawRates();
+// Boot
+init(42);
+drawRaster(); drawRates();
 setRunning(true);
 </script>
 </body>

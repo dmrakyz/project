@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noEmit": true,
+    "paths": {
+      "@snn/types": ["../packages/types/src/index.ts"],
+      "@snn/neurons": ["../packages/neurons/src/index.ts"],
+      "@snn/network": ["../packages/network/src/index.ts"],
+      "@snn/plasticity": ["../packages/plasticity/src/index.ts"],
+      "@snn/observability": ["../packages/observability/src/index.ts"],
+      "@snn/config": ["../packages/config/src/index.ts"]
+    },
+    "baseUrl": "."
+  },
+  "include": ["main.ts"]
+}
