@@ -1,0 +1,43 @@
+{
+  "name": "snn-agi-research",
+  "version": "0.1.0",
+  "private": true,
+  "description": "SNN-based AGI research platform — emergent intelligence through spike dynamics",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "tsc --build",
+    "test": "node --experimental-vm-modules node_modules/.bin/jest --passWithNoTests",
+    "test:watch": "node --experimental-vm-modules node_modules/.bin/jest --watch",
+    "clean": "find packages -name '*.js' -not -path '*/node_modules/*' -delete && find packages -name '*.d.ts' -not -path '*/node_modules/*' -delete",
+    "typecheck": "tsc --build --noEmit",
+    "benchmark": "node tools/benchmark/run.js"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.14",
+    "@types/node": "^22.0.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.5",
+    "typescript": "^5.7.3"
+  },
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "node",
+    "testMatch": [
+      "**/*.test.ts"
+    ],
+    "moduleNameMapper": {
+      "^@snn/types$": "<rootDir>/packages/types/src/index.ts",
+      "^@snn/config$": "<rootDir>/packages/config/src/index.ts",
+      "^@snn/neurons$": "<rootDir>/packages/neurons/src/index.ts",
+      "^@snn/network$": "<rootDir>/packages/network/src/index.ts",
+      "^@snn/plasticity$": "<rootDir>/packages/plasticity/src/index.ts",
+      "^@snn/environment$": "<rootDir>/packages/environment/src/index.ts",
+      "^@snn/observability$": "<rootDir>/packages/observability/src/index.ts",
+      "^@snn/simulation$": "<rootDir>/packages/simulation/src/index.ts",
+      "^@snn/runtime-wasm$": "<rootDir>/packages/runtime-wasm/src/index.ts",
+      "^@snn/cognitive$": "<rootDir>/packages/cognitive/src/index.ts"
+    }
+  }
+}

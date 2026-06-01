@@ -1,0 +1,17 @@
+[package]
+name = "snn-neurons"
+version.workspace = true
+edition.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+serde = { workspace = true }
+
+[dependencies.wasm-bindgen]
+workspace = true
+optional = true
+
+[features]
+wasm = ["dep:wasm-bindgen"]

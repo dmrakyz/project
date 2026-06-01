@@ -1,0 +1,16 @@
+{
+  "name": "@snn/simulation",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "dependencies": {
+    "@snn/types": "*",
+    "@snn/config": "*",
+    "@snn/neurons": "*",
+    "@snn/network": "*",
+    "@snn/plasticity": "*",
+    "@snn/observability": "*",
+    "@snn/environment": "*"
+  }
+}
